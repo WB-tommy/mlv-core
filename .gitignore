@@ -1,0 +1,43 @@
+# Build
+build/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+CPackConfig.cmake
+CPackSourceConfig.cmake
+Makefile
+*.make
+*.cmake
+!CMakeLists.txt
+!CPackConfig.cmake
+!CompilerChecks.cmake
+!DefineOptions.cmake
+!ProcessorTargets.cmake
+
+# Compiled output
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.o
+*.obj
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.vscode/
+.idea/
+*.xcodeproj/
+*.xcworkspace/
+*.user
+CMakeLists.txt.user
+
+# Clangd / compile commands
+compile_commands.json
+.cache/
