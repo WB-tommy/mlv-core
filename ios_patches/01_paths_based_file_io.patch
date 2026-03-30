@@ -1,0 +1,75 @@
+--- a/mlvcore/mlv/video_mlv.c
++++ b/mlvcore/mlv/video_mlv.c
+@@ -1815,7 +1815,8 @@
+     video->path = malloc( strlen(mlvPath) + 1 );
+     memcpy(video->path, mlvPath, strlen(mlvPath));
+     video->path[strlen(mlvPath)] = 0x0;
+-    video->file = load_all_chunks(mlvPath, &video->filenum);
++    if(!video->file)
++        video->file = load_all_chunks(mlvPath, &video->filenum);
+     if(!video->file)
+     {
+         sprintf(error_message, "Could not open file:  %s", video->path);
+@@ -596,6 +597,47 @@
+     return video;
+ }
+
++/* iOS: initialise mlv object with explicit chunk paths (no filesystem scanning) */
++mlvObject_t * initMlvObjectWithPaths(const char ** paths, int numPaths, int preview, int * err, char * error_message)
++{
++    if (numPaths < 1 || !paths || !paths[0])
++    {
++        if (err) *err = MLV_ERR_OPEN;
++        if (error_message) sprintf(error_message, "No paths provided");
++        return initMlvObject();
++    }
++
++    mlvObject_t * video = initMlvObject();
++
++    /* Pre-load chunk files from explicit paths */
++    video->file = malloc(sizeof(FILE*) * numPaths);
++    if (!video->file)
++    {
++        if (err) *err = MLV_ERR_OPEN;
++        if (error_message) sprintf(error_message, "Memory allocation failed");
++        return video;
++    }
++
++    for (int i = 0; i < numPaths; i++)
++    {
++        video->file[i] = fopen(paths[i], "rb");
++        if (!video->file[i])
++        {
++            /* Cleanup previously opened files */
++            for (int j = 0; j < i; j++) fclose(video->file[j]);
++            free(video->file);
++            video->file = NULL;
++            if (err) *err = MLV_ERR_OPEN;
++            if (error_message) sprintf(error_message, "Could not open file: %s", paths[i]);
++            return video;
++        }
++        video->filenum++;
++    }
++
++    /* openMlvClip will skip load_all_chunks since video->file is already set */
++    char error_message_tmp[256] = {0};
++    int err_tmp = openMlvClip(video, (char *)paths[0], preview, error_message_tmp);
++    if (err != NULL) *err = err_tmp;
++    if (error_message != NULL) strcpy(error_message, error_message_tmp);
++    return video;
++}
++
+ /* To initialise mlv object with a clip
+  * Two functions in one */
+ mlvObject_t * initMlvObjectWithMcrawClip(char * mlvPath, int preview, int * err, char * error_message)
+--- a/mlvcore/mlv/video_mlv.h
++++ b/mlvcore/mlv/video_mlv.h
+@@ -15,6 +15,8 @@
+ mlvObject_t * initMlvObjectWithClip(char * mlvPath, int preview, int * err, char * error_message);
+ mlvObject_t * initMlvObjectWithMcrawClip(char * mlvPath, int preview, int * err, char * error_message);
+
++/* iOS: initialise with explicit chunk paths (no filesystem scanning) */
++mlvObject_t * initMlvObjectWithPaths(const char ** paths, int numPaths, int preview, int * err, char * error_message);
++
+ /* Initialises an MLV object. That's all you need to know */
+ mlvObject_t * initMlvObject();
